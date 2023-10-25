@@ -87,6 +87,8 @@ public class StreetSegment {
                 EdgeStore.Edge edge = path.getEdge(edgeIdx);
                 StreetEdgeInfo streetEdgeInfo = new StreetEdgeInfo();
                 streetEdgeInfo.edgeId = edgeIdx;
+                /* GP2 edit: add osmid to the streetEdgeInfo, used in detailed iteneraries*/
+                streetEdgeInfo.edgeOsmId = edge.getOSMID();
                 streetEdgeInfo.geometry = edge.getGeometry();
                 streetEdgeInfo.streetName = streetLayer.getNameEdgeIdx(edgeIdx, Locale.ENGLISH);
                 //TODO: decide between NonTransitMode and mode
