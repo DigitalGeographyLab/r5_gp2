@@ -162,6 +162,17 @@ public class StreetSegmentTest {
         assertTrue(streetSegment.streetEdges.get(3).similarTo(streetSegment.streetEdges.get(4)));
 
     }
+
+
+    /* GP2 edit: added a test for gettgin osmId */
+    @Test
+    public void testGetOsmId() throws Exception {
+        StreetSegment streetSegment = loadFile("streetSegmentCAR_ROUNDABOUT.json");
+        // check that streetSegment has osmId
+        assertTrue(streetSegment.streetEdges.get(0).edgeOsmId == 123);
+        assertTrue(streetSegment.streetEdges.get(1).edgeOsmId == 456);
+        assertTrue(streetSegment.streetEdges.get(2).edgeOsmId == 789);
+    }
 }
 
 class GeometryWKTDeserializer extends JsonDeserializer<LineString>
