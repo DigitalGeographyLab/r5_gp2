@@ -43,7 +43,7 @@ import java.util.List;
 public class CustomCostField implements CostField, Serializable {
 
     // custom cost map has osmId as the key and additional seconds as value
-    public HashMap<Long, Integer> customCostMap = null;
+    public HashMap<Long, Double> customCostMap = null;
 
     // define the sensitivity coefficient for the custom cost field
     // currently also supports negative number
@@ -72,7 +72,7 @@ public class CustomCostField implements CostField, Serializable {
  * @param customCostMap
  * customCostMap has osmId as the key and the custom cost seconds as the value
  */
-    public CustomCostField (String displayKey, double sensitivityCoefficient, HashMap<Long, Integer> customCostMap) {
+    public CustomCostField (String displayKey, double sensitivityCoefficient, HashMap<Long, Double> customCostMap) {
         validateCustomCostMap(customCostMap);
         this.sensitivityCoefficient = sensitivityCoefficient;
         this.displayKey = displayKey;
@@ -81,7 +81,7 @@ public class CustomCostField implements CostField, Serializable {
     /**
      * Check that the custom cost map is not empty, do we need more validation?
      */
-    private void validateCustomCostMap(HashMap<Long, Integer> customCostMap) {
+    private void validateCustomCostMap(HashMap<Long, Double> customCostMap) {
         if (customCostMap == null || customCostMap.isEmpty()) {
             throw new IllegalArgumentException("Custom cost map cant be empty when initializing CustomCostField");
         }
@@ -89,28 +89,28 @@ public class CustomCostField implements CostField, Serializable {
     }
 
     /**
-     * Override method for adding custom cost to the base traversal time
+     * Override method for adding custom cost seconds to the base traversal time
      * 
-     * Notice: because Math.round is used which rounds to the closest integer
-     * we might get the same additionalSeconds using different sensitivityCoefficient
-     * e.g. 1 additionalSeconds with 1.5 and 2 sensitivityCoefficients
-     * because 1*1.5=1.5 -> additionalSeconds rounds to 2. And 1*2=2 -> additionalSeconds is 2.
-     * 
-     * because we are returning just the additional seconds int, not a multiplied value defived
-     * from baseTraversalTimeSeconds, the parameter is therefore obsolete in this context
-     * is still needed because of the interface
+     * This approach of adding custom cost seconds on top of the base traversal time
+     * makes the travel times not actual second times but rather "cost" times
      */
     @Override
     public int additionalTraversalTimeSeconds (EdgeStore.Edge currentEdge, int baseTraversalTimeSeconds) {
         // get the <long> osmId of the current edge
         long edgeOsmId = currentEdge.getOSMID();
         // get the custom cost factor from the custom cost map using the edgeas osmId as key
-        // if no custom cost factor is found, use 0 as default value
-        // Long keyOsmId = Long.valueOf(edgeOsmId);
         Long keyOsmId = Long.valueOf(edgeOsmId);
-        Integer additionalSeconds = this.customCostMap.get(keyOsmId);
-        // calculate seconds to be added to the base traversal time by multiplying the custom cost factor and sensitivity coefficient
-        return (int) Math.round(additionalSeconds * this.sensitivityCoefficient);
+        // using get (not getOrDefault) so this will throw an error if no custom cost is found
+        // thus leaving the responsibility to preprocessing module to make sure all edges have custom cost
+        Double customCostFactor = this.customCostMap.get(keyOsmId);
+        // throw an error if no custom cost is found
+        if (customCostFactor == null) {
+            throw new CustomCostFieldException("Custom cost not found for edge with osmId: " + currentEdge.getOSMID());
+        }
+        // calculate seconds to be added to the base traversal time 
+        // multiply the base travel time with custom cost factor and sensitivity coefficient
+        // this value is then added to the base traversal time
+        return (int) Math.round(baseTraversalTimeSeconds * customCostFactor * this.sensitivityCoefficient);
     }
 
     // currently not really used, implemented due to CostField interface
@@ -124,7 +124,7 @@ public class CustomCostField implements CostField, Serializable {
     public double getDisplayValue (int osmIdKey) {
         // will need this conversation because implementation needs int but key is long
         Long osmIdKeyLong = Long.valueOf(osmIdKey);
-        return this.customCostMap.getOrDefault(osmIdKeyLong, 0);
+        return this.customCostMap.get(osmIdKeyLong);
     }
 
     // convert 1-n custom cost fields to a list of custom cost fields
