@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeEach;    
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -114,7 +114,8 @@ public class CustomCostTest {
         // build the task from the grid, example taken from SimpsonDesertTests.java
         AnalysisWorkerTask task = gridLayout.newTaskBuilder()
                 .setOrigin(2, 2)
-                .monteCarloDraws(1)
+                .singleFreeformDestination(5, 5)
+                .monteCarloDraws(10)
                 .build();
 
         List<CustomCostField> customCostFieldsList = Network.streetLayer.edgeStore.costFields.stream()
@@ -183,8 +184,8 @@ public class CustomCostTest {
         assertTrue(CustomCostTravelTimes.size() == DefaultRoutingNoCustomCosts.size());
         assertTrue(CustomCostTravelTimes.size() > 0);
         assertTrue(CustomCostTravelTimes.size() == DefaultRoutingNoCustomCosts.size());
+        // check that travel times have changed (increased)
         assertTrue(!CustomCostTravelTimes.equals(DefaultRoutingNoCustomCosts));
-
         boolean allValuesIncreasedOrSame = IntStream.range(0, CustomCostTravelTimes.size())
         .allMatch(i -> CustomCostTravelTimes.get(i) >= DefaultRoutingNoCustomCosts.get(i));
 
@@ -276,7 +277,8 @@ public class CustomCostTest {
         // build the task from the grid, example taken from SimpsonDesertTests.java
         AnalysisWorkerTask task = gridLayout.newTaskBuilder()
                 .setOrigin(2, 2)
-                .monteCarloDraws(1)
+                .singleFreeformDestination(5, 5)
+                .monteCarloDraws(10)
                 .build();
 
         TravelTimeComputer computer = new TravelTimeComputer(task, Network);
