@@ -174,7 +174,7 @@ public class CustomCostTest {
     }
 
      @Test
-    public void testInvalidCustomCostMap() { 
+    public void testInvalidCustomCostMapOsmIdNotFound() { 
         GridLayout gridLayout = new GridLayout(SIMPSON_DESERT_CORNER, 6);
         TransportNetwork Network = gridLayout.generateNetwork();
         CustomCostField customCostInstance = new CustomCostField("testKey", 1.5, customCostHashMap);
