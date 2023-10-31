@@ -100,17 +100,30 @@ public class CustomCostField implements CostField, Serializable {
         long edgeOsmId = currentEdge.getOSMID();
         // get the custom cost factor from the custom cost map using the edgeas osmId as key
         Long keyOsmId = Long.valueOf(edgeOsmId);
-        // using get (not getOrDefault) so this will throw an error if no custom cost is found
-        // thus leaving the responsibility to preprocessing module to make sure all edges have custom cost
-        Double customCostFactor = this.customCostMap.get(keyOsmId);
+        Object customCostValue = this.customCostMap.get(keyOsmId);
         // throw an error if no custom cost is found
-        if (customCostFactor == null) {
+        if (customCostValue == null) {
             throw new CustomCostFieldException("Custom cost not found for edge with osmId: " + currentEdge.getOSMID());
         }
+        // check the type (Integer or Double) and cast to Double if needed
+        Double customCostFactor;
+        if (customCostValue instanceof Integer) {
+            customCostFactor = ((Integer) customCostValue).doubleValue();
+        } else if (customCostValue instanceof Double) {
+            customCostFactor = (Double) customCostValue;
+        } else {
+            throw new CustomCostFieldException("Unexpected type (should be number) for custom cost with osmId: " + currentEdge.getOSMID());
+        }   
         // calculate seconds to be added to the base traversal time 
         // multiply the base travel time with custom cost factor and sensitivity coefficient
         // this value is then added to the base traversal time
-        return (int) Math.round(baseTraversalTimeSeconds * customCostFactor * this.sensitivityCoefficient);
+        Double additionalCostSeconds = baseTraversalTimeSeconds * customCostFactor * this.sensitivityCoefficient;
+        // throw an error if the custom cost is NaN
+        if (Double.isNaN(additionalCostSeconds)) {
+            throw new CustomCostFieldException("Custom cost addition result is NaN for osmId:  " + currentEdge.getOSMID());
+        }
+        // value is rounded and casted to int for seconds
+        return (int) Math.round(additionalCostSeconds);
     }
 
     // currently not really used, implemented due to CostField interface
