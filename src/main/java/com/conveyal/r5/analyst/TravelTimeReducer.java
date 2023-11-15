@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static com.conveyal.r5.common.Util.notNullOrEmpty;
 import static com.conveyal.r5.profile.FastRaptorWorker.UNREACHED;
@@ -76,6 +77,13 @@ public class TravelTimeReducer {
 
     /** Provides a weighting factor for opportunities at a given travel time. */
     private final DecayFunction decayFunction;
+
+    /**
+     *  Store osmIds traversed in the whole routing
+     *  One inner list of osmIds for each path to destination
+     */
+    /* GP2 edit: add this attribute for osmIdsResult  */
+    private List<List<Long>> osmIdsResult;
 
     /**
      * Reduce travel time values to requested summary outputs for each origin. The type of output (a single
@@ -321,6 +329,12 @@ public class TravelTimeReducer {
         }
     }
 
+    /** setter for OsmIdResults  */
+    /* GP2 edit: add this setter */
+    public void setOsmIdsResult(List<List<Long>> osmIdResult) {
+        this.osmIdsResult = osmIdResult;
+    }
+
     /**
      * This is the primary way to create a OneOriginResult and end the processing.
      * Some alternate code paths exist for TAUI site generation and testing, but this handles all other cases.
@@ -328,8 +342,9 @@ public class TravelTimeReducer {
      * TimeGrid will have a buffer full of UNREACHED. This allows shortcutting around routing and propagation when the
      * origin point is not connected to the street network.
      */
+    /* GP2 edit: add osmIdsResult to OneOriginResult */
     public OneOriginResult finish () {
-        return new OneOriginResult(travelTimeResult, accessibilityResult, pathResult);
+        return new OneOriginResult(travelTimeResult, accessibilityResult, pathResult, osmIdsResult);
     }
 
     /**

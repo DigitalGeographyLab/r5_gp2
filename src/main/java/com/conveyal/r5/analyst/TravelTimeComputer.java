@@ -1,5 +1,6 @@
 package com.conveyal.r5.analyst;
 
+import com.conveyal.analysis.datasource.DataSourceException;
 import com.conveyal.r5.OneOriginResult;
 import com.conveyal.r5.analyst.cluster.AnalysisWorkerTask;
 import com.conveyal.r5.analyst.cluster.PathWriter;
@@ -14,6 +15,7 @@ import com.conveyal.r5.profile.FastRaptorWorker;
 import com.conveyal.r5.profile.McRaptorSuboptimalPathProfileRouter;
 import com.conveyal.r5.profile.PerTargetPropagater;
 import com.conveyal.r5.profile.StreetMode;
+import com.conveyal.r5.rastercost.CustomCost;
 import com.conveyal.r5.streets.LinkedPointSet;
 import com.conveyal.r5.streets.PointSetTimes;
 import com.conveyal.r5.streets.Split;
@@ -25,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 
@@ -234,6 +237,19 @@ public class TravelTimeComputer {
                 }
                 nonTransitTravelTimesToDestinations = PointSetTimes.minMerge(nonTransitTravelTimesToDestinations, pointSetTimes);
             }
+
+            // custom cost related code for getting osmids from router state
+            /* GP2 edit: add this OsmId related code block */
+            {
+                // only get osmids if the streetlayer has cost fields
+                if (network.streetLayer.edgeStore.costFields != null) {
+                    List<List<Long>> osmIdResults = CustomCost.getOsmIdsFromRouterState(nonTransitTravelTimesToDestinations, sr, network);
+                    if (osmIdResults == null) {
+                        throw new DataSourceException("No Destinations or could not get osmId's from path while streetlayer has cost fields");
+                    }
+                    travelTimeReducer.setOsmIdsResult(osmIdResults);
+                }
+            }
         }
 
         // Handle park+ride, a mode represented in the request LegMode but not in the internal StreetMode.
@@ -268,7 +284,7 @@ public class TravelTimeComputer {
             LOG.info("Origin point was outside the street network. Skipping routing and propagation, and returning default result.");
             return travelTimeReducer.finish();
         }
-
+        
         // Short circuit unnecessary transit routing: If the origin was linked to a road, but no transit stations
         // were reached, return the non-transit grid as the final result.
         if (request.transitModes.isEmpty() || bestAccessOptions.streetTimesAndModes.isEmpty()) {
