@@ -145,11 +145,11 @@ public class CustomCostField implements CostField, Serializable {
         if (Double.isNaN(additionalCostSeconds)) {
             throw new CustomCostFieldException("Custom cost addition result is NaN for osmId:  " + currentEdge.getOSMID());
         }
-        int roudedAdditionalCostSeconds = (int) Math.round(additionalCostSeconds);
+        int roundedAdditionalCostSeconds = (int) Math.round(additionalCostSeconds);
         // save the custom cost addition costs
-        customCostAdditionalTraveltimes.put(keyOsmId, roudedAdditionalCostSeconds);
+        customCostAdditionalTraveltimes.put(keyOsmId, roundedAdditionalCostSeconds);
         // value is rounded and casted to int for seconds
-        return roudedAdditionalCostSeconds;
+        return roundedAdditionalCostSeconds;
     }
 
     // currently not really used, implemented due to CostField interface
