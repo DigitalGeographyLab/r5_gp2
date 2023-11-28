@@ -110,6 +110,7 @@ public class CustomCostTest {
         CustomCostField customCostInstance = new CustomCostField("testKey", 2, customCostHashMap, allowNullCustomCostEdges);
         Network.streetLayer.edgeStore.costFields = CustomCostField.wrapToEdgeStoreCostFieldsList(customCostInstance);
 
+
         // build the task from the grid, example taken from SimpsonDesertTests.java
         AnalysisWorkerTask task = gridLayout.newTaskBuilder()
                 .setOrigin(2, 2)
@@ -118,8 +119,20 @@ public class CustomCostTest {
                 .monteCarloDraws(1)
                 .build();
 
+        List<CustomCostField> customCostFieldsList = Network.streetLayer.edgeStore.costFields.stream()
+            .map(CustomCostField.class::cast)
+            .collect(Collectors.toList());
+
+        assertTrue(customCostFieldsList.size() > 0);
+
+        // assert that all the customCostFields have empty baseTraveltimesMap
+        for (CustomCostField customCostField : customCostFieldsList) {
+            assertTrue(customCostField.getBaseTraveltimes().size() == 0);
+        }
+
         TravelTimeComputer computer = new TravelTimeComputer(task, Network);
         OneOriginResult oneOriginResult = computer.computeTravelTimes();
+
 
         assert(oneOriginResult != null);
         assertTrue(oneOriginResult.osmIdResults.size() > 0);
@@ -150,9 +163,10 @@ public class CustomCostTest {
 
 
         // REMOVE COSTFIELDS FROM NETWORK AND RUN ROUTING FOR COMPARISON
-
-        Network.streetLayer.edgeStore.costFields = null;
-        TravelTimeComputer computerNoCustomCosts = new TravelTimeComputer(task, Network);
+        // copy network to new variable
+        TransportNetwork NetworkNoCustomCosts = Network;
+        NetworkNoCustomCosts.streetLayer.edgeStore.costFields = null;
+        TravelTimeComputer computerNoCustomCosts = new TravelTimeComputer(task, NetworkNoCustomCosts);
         OneOriginResult oneOriginResultNoCustomCosts = computerNoCustomCosts.computeTravelTimes();
 
         assertTrue(oneOriginResultNoCustomCosts != null);
@@ -178,12 +192,6 @@ public class CustomCostTest {
 
         // check that customCost value is always same or bigger, never smaller
         assertTrue(allValuesIncreasedOrSame);
-<<<<<<< Updated upstream
-    }
-
-     @Test
-    public void testInvalidCustomCostMapOsmIdNotFound() { 
-=======
 
         // test that the custom cost values are correctly applied
         // and that the base time and custom cost "time" maps have correct values
@@ -262,7 +270,6 @@ public class CustomCostTest {
 
     @Test
     public void testInvalidCustomCostFactorsOsmIdNotFound() { 
->>>>>>> Stashed changes
         GridLayout gridLayout = new GridLayout(SIMPSON_DESERT_CORNER, 6);
         TransportNetwork Network = gridLayout.generateNetwork();
         CustomCostField customCostInstance = new CustomCostField("testKey", 1.5, staticCustomCostHashMap, false);
@@ -278,8 +285,7 @@ public class CustomCostTest {
 
         TravelTimeComputer computer = new TravelTimeComputer(task, Network);
 
-        // make sure that invalid customCostMap throws CustomCostFieldException
-        // error happens in additionalTraversalTimeSeconds -> Double customCostFactor = this.customCostMap.get(keyOsmId);
+        // make sure that invalid customCostFactors throws CustomCostFieldException
         Exception exception = assertThrows(CustomCostFieldException.class, () -> {
             computer.computeTravelTimes();
         });

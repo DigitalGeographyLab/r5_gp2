@@ -42,14 +42,6 @@ import java.util.List;
 /* GP2 edit: create this class to be used in Greenpaths custom cost exposure routing */
 public class CustomCostField implements CostField, Serializable {
 
-    // custom cost map has osmId as the key and additional seconds as value
-    public HashMap<Long, Double> customCostMap = null;
-
-    // define the sensitivity coefficient for the custom cost field
-    // currently also supports negative number
-    // this is needed for deriving multiple routes with different weights to custom cost
-    public double sensitivityCoefficient = 1;
-
     /** 
     * displayKey currently not really used, implemented due to CostField interface
     *
@@ -59,8 +51,6 @@ public class CustomCostField implements CostField, Serializable {
     */
     private final String displayKey;
 
-<<<<<<< Updated upstream
-=======
     // define the sensitivity coefficient for the custom cost field
     // currently also supports negative number
     // this is needed for deriving multiple routes with different weights to custom cost
@@ -95,7 +85,6 @@ public class CustomCostField implements CostField, Serializable {
      */
     private HashMap<Long, Integer> customCostAdditionalTraveltimes = new HashMap<Long, Integer>();
 
->>>>>>> Stashed changes
 
 /**
  * 
@@ -107,13 +96,6 @@ public class CustomCostField implements CostField, Serializable {
  * the only restricting factor is that the routing logic in MultistageTraversalTimeCalculator
  * will fallback to a positive number 1 if the sum of basetraversaltime + all custom cost found for that edge
  * will be less than 1. This is because the routing logic will not allow negative traversal times.
-<<<<<<< Updated upstream
- * @param customCostMap
- * customCostMap has osmId as the key and the custom cost seconds as the value
- */
-    public CustomCostField (String displayKey, double sensitivityCoefficient, HashMap<Long, Double> customCostMap) {
-        validateCustomCostMap(customCostMap);
-=======
  * @param customCostFactors
  * customCostFactors has osmId as the key and the custom cost seconds as the value
  * @param allowNullCustomCostEdges
@@ -123,7 +105,6 @@ public class CustomCostField implements CostField, Serializable {
  */
     public CustomCostField (String displayKey, double sensitivityCoefficient, HashMap<Long, Double> customCostFactors, boolean allowNullCustomCostEdges) {
         validateCustomCostFactors(customCostFactors);
->>>>>>> Stashed changes
         this.sensitivityCoefficient = sensitivityCoefficient;
         this.displayKey = displayKey;
         this.allowNullCustomCostEdges = allowNullCustomCostEdges;
@@ -132,11 +113,11 @@ public class CustomCostField implements CostField, Serializable {
     /**
      * Check that the custom cost map is not empty, do we need more validation?
      */
-    private void validateCustomCostMap(HashMap<Long, Double> customCostMap) {
-        if (customCostMap == null || customCostMap.isEmpty()) {
-            throw new IllegalArgumentException("Custom cost map cant be empty when initializing CustomCostField");
+    private void validateCustomCostFactors(HashMap<Long, Double> customCostFactors) {
+        if (customCostFactors == null || customCostFactors.isEmpty()) {
+            throw new IllegalArgumentException("Custom cost map can't be empty when initializing CustomCostField");
         }
-        this.customCostMap = customCostMap;
+        this.customCostFactors = customCostFactors;
     }
 
     /**
@@ -151,10 +132,6 @@ public class CustomCostField implements CostField, Serializable {
         long edgeOsmId = currentEdge.getOSMID();
         // get the custom cost factor from the custom cost map using the edgeas osmId as key
         Long keyOsmId = Long.valueOf(edgeOsmId);
-<<<<<<< Updated upstream
-        Object customCostValue = this.customCostMap.get(keyOsmId);
-        // throw an error if no custom cost is found
-=======
         // save the base traversal seconds
         baseTraveltimes.put(keyOsmId, baseTraversalTimeSeconds);
         // get custom cost factor using the osmId as key
@@ -165,7 +142,6 @@ public class CustomCostField implements CostField, Serializable {
             customCostValue = 0.0;
         }
         // if customCostValue from HashMap was null and flag allowNullcustomCostEdges is false
->>>>>>> Stashed changes
         if (customCostValue == null) {
             throw new CustomCostFieldException("Custom cost not found for edge with osmId: " + currentEdge.getOSMID());
         }
@@ -196,8 +172,11 @@ public class CustomCostField implements CostField, Serializable {
                 throw new CustomCostFieldException("Custom cost addition result is NaN for osmId:  " + currentEdge.getOSMID());
             }
         }
+        int roundedAdditionalCostSeconds = (int) Math.round(additionalCostSeconds);
+        // save the custom cost addition costs
+        customCostAdditionalTraveltimes.put(keyOsmId, roundedAdditionalCostSeconds);
         // value is rounded and casted to int for seconds
-        return (int) Math.round(additionalCostSeconds);
+        return roundedAdditionalCostSeconds;
     }
 
     // currently not really used, implemented due to CostField interface
@@ -211,8 +190,24 @@ public class CustomCostField implements CostField, Serializable {
     public double getDisplayValue (int osmIdKey) {
         // will need this conversation because implementation needs int but key is long
         Long osmIdKeyLong = Long.valueOf(osmIdKey);
-        return this.customCostMap.get(osmIdKeyLong);
+        return this.customCostFactors.get(osmIdKeyLong);
     }
+
+    public double getSensitivityCoefficient() {
+        return sensitivityCoefficient;
+    }
+
+    public HashMap<Long, Double> getCustomCostFactors() {
+        return customCostFactors;
+    }
+
+    public HashMap<Long, Integer> getBaseTraveltimes() {
+        return baseTraveltimes;
+    }
+
+    public HashMap<Long, Integer> getcustomCostAdditionalTraveltimes() {
+        return customCostAdditionalTraveltimes;
+    }   
 
     // convert 1-n custom cost fields to a list of custom cost fields
     public static List<CostField> wrapToEdgeStoreCostFieldsList(CostField... customCostFields) {
