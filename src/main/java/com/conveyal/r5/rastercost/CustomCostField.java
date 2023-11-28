@@ -99,7 +99,7 @@ public class CustomCostField implements CostField, Serializable {
  * @param customCostFactors
  * customCostFactors has osmId as the key and the custom cost seconds as the value
  * @param allowNullCustomCostEdges
- * flag for allowing or disallowing null costs for osmids in the customCostFactors
+ * (optional) flag for allowing or disallowing null costs for osmids in the customCostFactors
  * if this is false, every edge/osmid key needs to have a value in the HashMap, otheriwse will throw error
  * if true, will just fallback to 0 additionalSeconds for each edge where customCost value not found
  */
@@ -108,6 +108,11 @@ public class CustomCostField implements CostField, Serializable {
         this.sensitivityCoefficient = sensitivityCoefficient;
         this.displayKey = displayKey;
         this.allowNullCustomCostEdges = allowNullCustomCostEdges;
+    }
+
+    // Overloaded constructor with allowNullCustomCostEdges set to false
+    public CustomCostField(String displayKey, double sensitivityCoefficient, HashMap<Long, Double> customCostFactors) {
+        this(displayKey, sensitivityCoefficient, customCostFactors, false);
     }
 
     /**
@@ -167,10 +172,6 @@ public class CustomCostField implements CostField, Serializable {
             // multiply the base travel time with custom cost factor and sensitivity coefficient
             // this value is then added to the base traversal time
             additionalCostSeconds = baseTraversalTimeSeconds * customCostFactor * this.sensitivityCoefficient;
-            // throw an error if the custom cost is NaN
-            if (Double.isNaN(additionalCostSeconds)) {
-                throw new CustomCostFieldException("Custom cost addition result is NaN for osmId:  " + currentEdge.getOSMID());
-            }
         }
         int roundedAdditionalCostSeconds = (int) Math.round(additionalCostSeconds);
         // save the custom cost addition costs
