@@ -60,6 +60,12 @@ public class CustomCostField implements CostField, Serializable {
     // consists of osmId as the key and custom cost factor as value
     private HashMap<Long, Double> customCostFactors = null;
 
+    // Flag for allowing null's for custom cost edges.
+    // If this is false the routing will force custom cost values for each edge so
+    // the rouiting will crash if no value found for each edge traversed
+    // if set to true, the processed edge will get a custom cost value of 0
+    private boolean allowNullCustomCostEdges;
+
     /** 
     * base edge travel times by osmid
     * these costs are without the custom cost addition
@@ -83,7 +89,8 @@ public class CustomCostField implements CostField, Serializable {
 /**
  * 
  * @param displayKey
- * displayKey currently not really used, implemented due to CostField interface
+ * usefull when using multiple custom cost instances for naming
+ * also implemented due to CostField interface
  * @param sensitivityCoefficient
  * sensitivityCoefficient can currently also be a negative number
  * the only restricting factor is that the routing logic in MultistageTraversalTimeCalculator
@@ -91,11 +98,16 @@ public class CustomCostField implements CostField, Serializable {
  * will be less than 1. This is because the routing logic will not allow negative traversal times.
  * @param customCostFactors
  * customCostFactors has osmId as the key and the custom cost seconds as the value
+ * @param allowNullCustomCostEdges
+ * flag for allowing or disallowing null costs for osmids in the customCostFactors
+ * if this is false, every edge/osmid key needs to have a value in the HashMap, otheriwse will throw error
+ * if true, will just fallback to 0 additionalSeconds for each edge where customCost value not found
  */
-    public CustomCostField (String displayKey, double sensitivityCoefficient, HashMap<Long, Double> customCostFactors) {
+    public CustomCostField (String displayKey, double sensitivityCoefficient, HashMap<Long, Double> customCostFactors, boolean allowNullCustomCostEdges) {
         validateCustomCostFactors(customCostFactors);
         this.sensitivityCoefficient = sensitivityCoefficient;
         this.displayKey = displayKey;
+        this.allowNullCustomCostEdges = allowNullCustomCostEdges;
     }
 
     /**
@@ -124,26 +136,41 @@ public class CustomCostField implements CostField, Serializable {
         baseTraveltimes.put(keyOsmId, baseTraversalTimeSeconds);
         // get custom cost factor using the osmId as key
         Object customCostValue = this.customCostFactors.get(keyOsmId);
-        // throw an error if no custom cost is found
+        // if custom cost not found and flag for allowing null/not found costs is set
+        if (customCostValue == null && this.allowNullCustomCostEdges) {
+            // setting to 0 for no effect, also will prevent from going to exception due to not null
+            customCostValue = 0.0;
+        }
+        // if customCostValue from HashMap was null and flag allowNullcustomCostEdges is false
         if (customCostValue == null) {
             throw new CustomCostFieldException("Custom cost not found for edge with osmId: " + currentEdge.getOSMID());
         }
-        // check the type (Integer or Double) and cast to Double if needed
-        Double customCostFactor;
-        if (customCostValue instanceof Integer) {
-            customCostFactor = ((Integer) customCostValue).doubleValue();
-        } else if (customCostValue instanceof Double) {
-            customCostFactor = (Double) customCostValue;
-        } else {
-            throw new CustomCostFieldException("Unexpected type (should be number) for custom cost with osmId: " + currentEdge.getOSMID());
-        }   
-        // calculate seconds to be added to the base traversal time 
-        // multiply the base travel time with custom cost factor and sensitivity coefficient
-        // this value is then added to the base traversal time
-        Double additionalCostSeconds = baseTraversalTimeSeconds * customCostFactor * this.sensitivityCoefficient;
-        // throw an error if the custom cost is NaN
-        if (Double.isNaN(additionalCostSeconds)) {
-            throw new CustomCostFieldException("Custom cost addition result is NaN for osmId:  " + currentEdge.getOSMID());
+
+        Double additionalCostSeconds;
+        // if customCostValue is 0.0, or was set to 0.0 because was null and flag allowNullCustomCostEdges is true
+        // skip calculating the additional custom cost time and fallback to 0.0
+        if (customCostValue.equals(0.0)) {
+            additionalCostSeconds = 0.0;
+        }
+        // calculate the additionalCostSeconds for edge where customCostValue is found
+        else {
+            // cast to Double if needed
+            Double customCostFactor;
+            if (customCostValue instanceof Integer) {
+                customCostFactor = ((Integer) customCostValue).doubleValue();
+            } else if (customCostValue instanceof Double) {
+                customCostFactor = (Double) customCostValue;
+            } else {
+                throw new CustomCostFieldException("Unexpected type (should be number) for custom cost with osmId: " + currentEdge.getOSMID());
+            }   
+            // calculate seconds to be added to the base traversal time 
+            // multiply the base travel time with custom cost factor and sensitivity coefficient
+            // this value is then added to the base traversal time
+            additionalCostSeconds = baseTraversalTimeSeconds * customCostFactor * this.sensitivityCoefficient;
+            // throw an error if the custom cost is NaN
+            if (Double.isNaN(additionalCostSeconds)) {
+                throw new CustomCostFieldException("Custom cost addition result is NaN for osmId:  " + currentEdge.getOSMID());
+            }
         }
         int roundedAdditionalCostSeconds = (int) Math.round(additionalCostSeconds);
         // save the custom cost addition costs
@@ -188,4 +215,3 @@ public class CustomCostField implements CostField, Serializable {
     }
 
 }
-
