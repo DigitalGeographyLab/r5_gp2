@@ -276,6 +276,11 @@ public class CustomCostTest {
         // build the task from the grid, example taken from SimpsonDesertTests.java
         AnalysisWorkerTask task = gridLayout.newTaskBuilder()
                 .setOrigin(2, 2)
+<<<<<<< HEAD
+=======
+                .setDestination(5, 3)
+                .uniformOpportunityDensity(2)
+>>>>>>> bb80254b2286e6353953097fe5ab64a641b05153
                 .monteCarloDraws(1)
                 .build();
 
