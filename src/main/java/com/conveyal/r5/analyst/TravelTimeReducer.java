@@ -86,7 +86,7 @@ public class TravelTimeReducer {
      *  One inner list of osmIds for each path to destination
      */
     /* GP2 edit: add this attribute for osmIdsResult  */
-    private List<List<Long>> osmIdsResult = null;
+    private List<List<Long>> osmIdsResult;
 
     /**
      * Reduce travel time values to requested summary outputs for each origin. The type of output (a single

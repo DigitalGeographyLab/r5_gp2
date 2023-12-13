@@ -2,6 +2,8 @@ package com.conveyal.r5;
 
 import java.util.List;
 
+import org.checkerframework.checker.units.qual.t;
+
 import com.conveyal.r5.analyst.AccessibilityResult;
 import com.conveyal.r5.analyst.TemporalDensityResult;
 import com.conveyal.r5.analyst.cluster.PathResult;
@@ -28,6 +30,11 @@ public class OneOriginResult {
     /* GP2 edit: add this attribute to save OsmIdResults */
     public final List<List<Long>> osmIdResults;
 
+    /* GP2 edit: add optional OsmIdResults */
+    public OneOriginResult(TravelTimeResult travelTimes, AccessibilityResult accessibility, PathResult paths, TemporalDensityResult density) {
+        this(travelTimes, accessibility, paths, density, null);
+    }
+
     /* GP2 edit: add optional OsmIdResults 
     *  edit2: add density with r5 version update
     *  edit3: use only single constructor including density, added osmIdResults as null by default where calling this constructor
@@ -39,15 +46,4 @@ public class OneOriginResult {
         this.density = density;
         this.osmIdResults = osmIdResults;
     }
-
-    /* GP2 edit: add this overload constructor to handle optional osmIdResults
-     * edit2: add density with r5 version update
-      */
-    // public OneOriginResult(TravelTimeResult travelTimes, AccessibilityResult accessibility, PathResult paths, List<List<Long>> osmIdResults) {
-    //     this.travelTimes = travelTimes;
-    //     this.accessibility = accessibility;
-    //     this.paths = paths;
-    //     this.density = null;
-    //     this.osmIdResults = osmIdResults;
-    // }
 }
